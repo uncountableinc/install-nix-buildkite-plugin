@@ -1,0 +1,7 @@
+name: Install Nix
+description: Installs nix on buildkite
+author: https://github.com/uncountableinc
+requirements: []
+configuration:
+  properties: {}
+  additionalProperties: false
