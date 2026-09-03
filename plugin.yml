@@ -16,4 +16,6 @@ configuration:
       type: array
       items:
         type: string
+    start-daemon:
+      type: boolean
   additionalProperties: false
