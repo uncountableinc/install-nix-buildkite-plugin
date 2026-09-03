@@ -3,5 +3,17 @@ description: Installs nix on buildkite
 author: https://github.com/uncountableinc
 requirements: []
 configuration:
-  properties: {}
+  properties:
+    extra-substituters:
+      type: array
+      items:
+        type: string
+    extra-trusted-public-keys:
+      type: array
+      items:
+        type: string
+    extra-conf:
+      type: array
+      items:
+        type: string
   additionalProperties: false
