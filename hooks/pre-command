@@ -53,15 +53,48 @@ if [ -n "${extra_conf_args[*]+set}" ]; then
   printf '  %s\n' "${extra_conf_args[@]}" | grep -v -- '--extra-conf' || true
 fi
 
+case "$OSTYPE" in
+  linux*)
+    planner_args=(install linux --no-confirm --init none)
+    daemon_is_managed=false
+    ;;
+  darwin*)
+    planner_args=(install --no-confirm)
+    daemon_is_managed=true
+    ;;
+  *)
+    echo "install-nix: unsupported OSTYPE '$OSTYPE'" >&2
+    exit 1
+    ;;
+esac
+
 curl --proto '=https' --tlsv1.2 -sSf -L "https://install.determinate.systems/nix?ci=buildkite" | \
-    sh -s -- install linux \
-      --no-confirm \
-      --init none \
+    sh -s -- "${planner_args[@]}" \
       ${extra_conf_args[@]+"${extra_conf_args[@]}"}
 
 export PATH="/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:$PATH"
 
-if [ "${BUILDKITE_PLUGIN_INSTALL_NIX_START_DAEMON:-false}" = "true" ]; then
+package_index=0
+while true; do
+  package_source_var="${PLUGIN_PREFIX}_PACKAGES_${package_index}_SOURCE"
+  package_source="${!package_source_var:-}"
+  if [ -z "$package_source" ]; then
+    break
+  fi
+  attrs=()
+  while IFS= read -r attr; do
+    attrs+=("$attr")
+  done < <(collect_plugin_list "PACKAGES_${package_index}_ATTRS")
+  if [ "${#attrs[@]}" -gt 0 ]; then
+    echo "Installing ${attrs[*]} from $package_source"
+    nix-env --install --attr "${attrs[@]}" --file "$package_source"
+  fi
+  package_index=$((package_index + 1))
+done
+
+if [ "${BUILDKITE_PLUGIN_INSTALL_NIX_START_DAEMON:-false}" = "true" ] && [ "$daemon_is_managed" = "true" ]; then
+  echo "install-nix: start-daemon is ignored on $OSTYPE; the init system owns the daemon"
+elif [ "${BUILDKITE_PLUGIN_INSTALL_NIX_START_DAEMON:-false}" = "true" ]; then
   nohup /usr/local/bin/determinate-nixd daemon > /dev/null 2>&1 &
   export NIX_REMOTE=daemon
 

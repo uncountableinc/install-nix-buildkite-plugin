@@ -16,6 +16,21 @@ configuration:
       type: array
       items:
         type: string
+    packages:
+      type: array
+      items:
+        type: object
+        properties:
+          source:
+            type: string
+          attrs:
+            type: array
+            items:
+              type: string
+        required:
+          - source
+          - attrs
+        additionalProperties: false
     start-daemon:
       type: boolean
   additionalProperties: false
